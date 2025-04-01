@@ -48,14 +48,10 @@ class FlashcardUI:
             self.first_frame.grid_columnconfigure(0, weight=1)
             self.first_frame.grid_columnconfigure(1, weight=1)
 
-            self.file_name_label = tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize))
             self.no_cards_label = tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize))
             self.box_labels = [tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize)) for _ in range(5)]
             
             self.start_button = tk.Button(self.first_frame, text="Start", font=("Arial", self.fontsize))
-
-            
-            self.file_name_label.grid(row=0, column=0, columnspan=2, pady=10, sticky="nsew")
             
             for i in range(5):
                 self.box_labels[i].grid(row=i+1, column=0, columnspan=2, pady=10, sticky="nsew")
@@ -72,16 +68,19 @@ class FlashcardUI:
         # Configure row and column weights for front frame to center widgets
         self.front_frame.grid_rowconfigure(0, weight=1)
         self.front_frame.grid_rowconfigure(1, weight=1)
+        self.front_frame.grid_rowconfigure(2, weight=1)
         self.front_frame.grid_columnconfigure(0, weight=1)
         self.front_frame.grid_columnconfigure(1, weight=1)
 
+        self.subject_label = tk.Label(self.front_frame, font=(self.fontfamily, self.fontsize) , foreground='lightblue')
         self.en_label_front = tk.Label(self.front_frame, font=(self.fontfamily, self.fontsize))
         self.answer = tk.Entry(self.front_frame, width=30, font=(self.fontfamily, self.fontsize))
         self.back_button = tk.Button(self.front_frame, text="Back", font=("Arial", self.fontsize))
         self.box_no_label = tk.Label(self.front_frame, font=(self.fontfamily, self.fontsize), text='boxno', foreground='yellow')
 
+        self.subject_label.grid(row=0, column=0, columnspan=1, sticky="nsew")
         self.box_no_label.grid(row=0, column=3, columnspan=1, pady=10,sticky="nsew" )
-        self.en_label_front.grid(row=0, column=0, columnspan=3, pady=10, sticky="nsew")
+        self.en_label_front.grid(row=0, column=1, columnspan=3, pady=10, sticky="nsew")
         self.answer.grid(row=1, column=0, columnspan=5, pady=10, sticky="nsew")
         self.back_button.grid(row=2, column=0, columnspan=5, pady=10, sticky="nsew")
 
@@ -139,7 +138,6 @@ class FlashcardUI:
         self.save_button = tk.Button(self.edit_frame, text="Save", font=("Arial", self.fontsize))
         self.cancel_button = tk.Button(self.edit_frame, text="Cancel", font=("Arial", self.fontsize))
 
-
         self.en_label_edit.grid(row=0, column=0, columnspan=3, pady=10, sticky="nsew")
         self.it_label_edit.grid(row=1, column=0, columnspan=3, pady=10, sticky="nsew")
         self.eg_label_edit.grid(row=2, column=0, columnspan=3, pady=10, sticky="nsew")
@@ -150,9 +148,11 @@ class FlashcardUI:
 
         self.save_button.grid(row=3, column=0, columnspan=2, sticky="nsew")
         self.cancel_button.grid(row=4, column=0, columnspan=2, sticky="nsew")
+        self._current_frame = self.edit_frame
 
-    def show_flashcard_front(self, en, wrong_no, correct_no, box_no):
+    def show_flashcard_front(self, en, wrong_no, correct_no, box_no, subject):
         self.en_label_front.config(text=en)
+        self.subject_label.config(text=subject)
         self.box_no_label.config(text=f'BOX {box_no}')
         self.answer.delete(0, tk.END)
         self.counter_label.config(text=f"Correct: {correct_no} \nWrong: {wrong_no}")
@@ -177,10 +177,7 @@ class FlashcardUI:
         self.eg_entry.insert(0, example)
         self._current_frame = self.edit_frame
     
-    def show_first_page(self, file_name, boxes):
-         self.first_frame.tkraise()
-         print(f"first {file_name}")
-         self.file_name_label.config(text=f"File: {file_name}")
+    def show_first_page(self, boxes):
          for i in range(5):
              self.box_labels[i].config(text=f"box {i+1}: {boxes[i]}")
          self._current_frame = self.first_frame

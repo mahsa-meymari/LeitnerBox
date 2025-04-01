@@ -27,24 +27,30 @@ class FlashcardController:
         self.next_card()
     
     def edit_flashcard(self):
-        en, it, example, _ = self.fc_model.get_flashcard()
+        en = self.fc_model.get_flashcard_question()
+        it = self.fc_model.get_flashcard_answer()
+        example = self.fc_model.get_flashcard_example()
         self.fc_ui.show_edit_flashcard(en, it, example)
 
     def _should_show_flashcard(self):
         """
         Logic to check if the current flashcard should be displayed based on its 'Box' and 'LRD' values.
         """
-        box, LRD = self.fc_model.get_card_box_LRD()
+        box = self.fc_model.get_flashcard_box()
+        LRD = self.fc_model.get_flashcard_last_review_date()
+        LRD_date = date.fromisoformat(LRD)
         return (
              box == 1 or
-            (box == 2 and LRD <= (date.today() - timedelta(days=2))) or
-            (box == 3 and LRD <= (date.today() - timedelta(days=5))) or
-            (box == 4 and LRD <= (date.today() - timedelta(days=10))) or
-            (box == 5 and LRD <= (date.today() - timedelta(days=30)))
+            (box == 2 and LRD_date <= (date.today() - timedelta(days=2))) or
+            (box == 3 and LRD_date <= (date.today() - timedelta(days=5))) or
+            (box == 4 and LRD_date <= (date.today() - timedelta(days=10))) or
+            (box == 5 and LRD_date <= (date.today() - timedelta(days=30)))
         )
     
     def rotate_flashcard(self):
-        en, it, example, _ = self.fc_model.get_flashcard()
+        en = self.fc_model.get_flashcard_question()
+        it = self.fc_model.get_flashcard_answer()
+        example = self.fc_model.get_flashcard_example()
         your_answer_color = 'green' if self.fc_ui.get_answer().lower() == it.lower() else 'red'
         self.fc_ui.show_flashcard_back(en, it, example, your_answer_color)
         self.fc_ui.root.after(100, self.read_italian, it)  # 100 ms delay (can be adjusted)
@@ -60,9 +66,7 @@ class FlashcardController:
             if not unfinished:
                 self.fc_ui.show_end_page()
                 return
-
-        en, _, _, box_no = self.fc_model.get_flashcard()
-        self.fc_ui.show_flashcard_front(en, self.wrong_no, self.correct_no, box_no)
+        self.show_flashcard()
 
     def is_correct(self):
         """Handle correct answer: move the card to the next box."""
@@ -72,7 +76,7 @@ class FlashcardController:
 
     def is_wrong(self):
         """Handle wrong answer: move the card to the first box."""
-        self.fc_model.return_cart_to_first_box()
+        self.fc_model.return_card_to_first_box()
         self.wrong_no+=1
         self.next_card()
 
@@ -85,16 +89,18 @@ class FlashcardController:
         self.show_flashcard()
 
     def show_flashcard(self):
-        en, _, _, box_no = self.fc_model.get_flashcard()
-        self.fc_ui.show_flashcard_front(en, self.wrong_no, self.correct_no, box_no)
+        en = self.fc_model.get_flashcard_question()
+        box_no = self.fc_model.get_flashcard_box()
+        subject = self.fc_model.get_flashcard_subject()
+        self.fc_ui.show_flashcard_front(en, self.wrong_no, self.correct_no, box_no, subject)
 
-    def show_first_page(self, file_name):
-        boxes = [self.fc_model.get_numof_cards_in_box(i) for i in range(1, 6)]
-        self.fc_ui.show_first_page(file_name, boxes)
+    def show_first_page(self):
+        count_per_boxs = self.fc_model.get_count_cards_per_box()
+        self.fc_ui.show_first_page(list(count_per_boxs.values()))
         
 
-    def start(self, file_name):
-        self.show_first_page(file_name)
+    def start(self):
+        self.show_first_page()
         self.fc_ui.start_UI()
 
     def delete_flashcard(self):
@@ -102,11 +108,11 @@ class FlashcardController:
         self.next_card()
 
     def play_example(self):
-        _ , _, example, _ = self.fc_model.get_flashcard()
+        example= self.fc_model.get_flashcard_example()
         self.read_italian(example)
     
     def play_it(self):
-        _ , it, _, _ = self.fc_model.get_flashcard()
+        it= self.fc_model.get_flashcard_answer()
         self.read_italian(it)
 
     def read_italian(self,text):
