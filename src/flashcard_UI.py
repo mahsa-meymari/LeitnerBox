@@ -1,14 +1,16 @@
 import tkinter as tk
+from tkinter import messagebox
+
 
 class FlashcardUI:
-
     def __init__(self, fontsize=30, fontfamily="Arial"):
         # Create UI window
         self.fontsize = fontsize
-        self.fontfamily = fontfamily
+        self.fontfamily = fontfamily 
         self.root = tk.Tk()
         self.root.title("Flash Cards")
         self.root.geometry("1000x600")
+        self.cards_val = tk.IntVar()  
 
         # Create frames for each page
         self.front_frame = tk.Frame(self.root)
@@ -20,10 +22,10 @@ class FlashcardUI:
         for frame in (self.front_frame, self.back_frame, self.edit_frame, self.first_frame, self.end_frame):
             frame.grid(row=0, column=0, columnspan=5 ,sticky="nsew")
 
-        
         # Create and center widgets
-        self.counter_label = tk.Label(self.root, font=(self.fontfamily, self.fontsize))
+        self.counter_label = tk.Label(self.root, font=(self.fontfamily, self.fontsize//2))
         self.counter_label.grid(row=0, column=10, columnspan=5, sticky="nw")
+        self.update_conter_label(0,0)
 
 
         # Configure grid weights to make sure the content is centered
@@ -48,16 +50,18 @@ class FlashcardUI:
             self.first_frame.grid_columnconfigure(0, weight=1)
             self.first_frame.grid_columnconfigure(1, weight=1)
 
+            self.entry_num_cards = tk.Entry(self.first_frame, textvariable=self.cards_val)
             self.cards_for_today_label = tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize))
             self.no_cards_label = tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize))
             self.box_labels = [tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize)) for _ in range(5)]
             
             self.start_button = tk.Button(self.first_frame, text="Start", font=("Arial", self.fontsize)) 
             self.cards_for_today_label.grid(row=0, column=0, columnspan=2, pady=10, sticky="nsew")
+            
             for i in range(5):
                 self.box_labels[i].grid(row=i+1, column=0, columnspan=2, pady=10, sticky="nsew")
-            
-            self.start_button.grid(row=6, column=0, columnspan=2, pady=10, sticky="nsew")
+            self.entry_num_cards.grid(row=6, column=0, columnspan=2, pady=10, sticky="nsew")
+            self.start_button.grid(row=7, column=0, columnspan=2, pady=10, sticky="nsew")
     
     def build_end_page(self):
         self.end_frame.grid_rowconfigure(0, weight=1)
@@ -79,9 +83,9 @@ class FlashcardUI:
         self.back_button = tk.Button(self.front_frame, text="Back", font=("Arial", self.fontsize))
         self.box_no_label = tk.Label(self.front_frame, font=(self.fontfamily, self.fontsize), text='boxno', foreground='yellow')
 
-        self.subject_label.grid(row=0, column=0, columnspan=1, sticky="nsew")
-        self.box_no_label.grid(row=0, column=3, columnspan=1, pady=10,sticky="nsew" )
-        self.en_label_front.grid(row=0, column=1, columnspan=3, pady=10, sticky="nsew")
+        self.subject_label.grid(row=0, column=0, columnspan=1, pady=10, sticky="nsw")
+        self.box_no_label.grid(row=0, column=3, columnspan=1, pady=10,sticky="nse" )
+        self.en_label_front.grid(row=0, column=1, columnspan=3, sticky="nsw")
         self.answer.grid(row=1, column=0, columnspan=5, pady=10, sticky="nsew")
         self.back_button.grid(row=2, column=0, columnspan=5, pady=10, sticky="nsew")
 
@@ -151,13 +155,12 @@ class FlashcardUI:
         self.cancel_button.grid(row=4, column=0, columnspan=2, sticky="nsew")
         self._current_frame = self.edit_frame
 
-    def show_flashcard_front(self, en, wrong_no, correct_no, box_no, subject):
+    def show_flashcard_front(self, en, box_no, subject):
+        self.front_frame.tkraise()
         self.en_label_front.config(text=en)
         self.subject_label.config(text=subject)
         self.box_no_label.config(text=f'BOX {box_no}')
         self.answer.delete(0, tk.END)
-        self.counter_label.config(text=f"Correct: {correct_no} \nWrong: {wrong_no}")
-        self.front_frame.tkraise()
         self._current_frame = self.front_frame
 
     def show_flashcard_back(self, en, it, example, your_answer_color):
@@ -181,19 +184,26 @@ class FlashcardUI:
     
     def show_first_page(self, boxes,no_cards_for_today):
          self.first_frame.tkraise()
-         print("here we are")
          self.cards_for_today_label.config(text=f"Cards For Today:{no_cards_for_today}")
          for i in range(5):
              self.box_labels[i].config(text=f"box {i+1}: {boxes[i]}")
          self._current_frame = self.first_frame
          
-
     def show_end_page(self):
         self.end_frame.tkraise()
         self._current_frame = self.end_frame
 
     def get_answer(self):
         return self.answer.get()
+    
+    def get_cards_val(self):
+        return self.cards_val.get()
+
+    def show_warning(self,warning="please enter a number"):
+            messagebox.showwarning("Input Error", warning)
+    
+    def update_conter_label(self,correct_no,wrong_no):
+        self.counter_label.config(text=f"Correct: {correct_no} \nWrong: {wrong_no} \n total: {correct_no+wrong_no}/{self.get_cards_val()}")
     
     def start_UI(self):
         self.root.mainloop()

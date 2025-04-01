@@ -2,14 +2,18 @@ import pandas as pd
 from datetime import date
 import sqlite3
 from datetime import date, timedelta
+from itertools import cycle
 
 class FlashcardModel:
     def __init__(self): 
         self.conn = sqlite3.connect("leitnerbox.db")
         self.cursor = self.conn.cursor() 
-        self.current_id = 0
         self._create_table_flashcards()
         self.today_flashcards_ids = self.find_todays_cards()
+
+        self.flashcard_iterator = None
+        self.current_flashcard_id = None
+
 
     def _create_table_flashcards(self):
         self.cursor.execute(
@@ -73,7 +77,7 @@ class FlashcardModel:
         self.conn.close()
 
     def delete_current_flashcard(self):    
-        self.cursor.execute("DELETE FROM flashcards WHERE id = ?", (self.current_id,))
+        self.cursor.execute("DELETE FROM flashcards WHERE id = ?", (self.current_flashcard_id,))
         self.conn.commit()
     
     def edit_flashcard(self, en, it, essempio):
@@ -86,38 +90,37 @@ class FlashcardModel:
         # Update the box_number after a successful review
         self.cursor.execute(
             "UPDATE flashcards SET box_number = ?, last_review_date = ? WHERE id = ?",
-            (new_box_no, self._get_today_date() , self.current_id)
+            (new_box_no, self._get_today_date() , self.current_flashcard_id)
         )
         self.conn.commit()
 
     def get_flashcard_question(self):
-        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_id,))
+        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_flashcard_id,))
         flashcard = self.cursor.fetchall()[0]  # Get all matching rows
         return flashcard[1]
     
-    
     def get_flashcard_answer(self):
-        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_id,))
+        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_flashcard_id,))
         flashcard = self.cursor.fetchall()[0]  # Get all matching rows
         return flashcard[2]
 
     def get_flashcard_example(self):
-        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_id,))
+        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_flashcard_id,))
         flashcard = self.cursor.fetchall()[0]  # Get all matching rows
         return flashcard[3]
     
     def get_flashcard_box(self):
-        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_id,))
+        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_flashcard_id,))
         flashcard = self.cursor.fetchall()[0]  # Get all matching rows
         return flashcard[4]
     
     def get_flashcard_last_review_date(self):
-        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_id,))
+        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_flashcard_id,))
         flashcard = self.cursor.fetchall()[0]  # Get all matching rows
         return flashcard[5]
     
     def get_flashcard_subject(self):
-        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_id,))
+        self.cursor.execute("SELECT * FROM flashcards WHERE id = ?", (self.current_flashcard_id,))
         flashcard = self.cursor.fetchall()[0]  # Get all matching rows
         return flashcard[6]
     
@@ -129,7 +132,7 @@ class FlashcardModel:
         # Update the box_number after a failed review
         self.cursor.execute(
             "UPDATE flashcards SET box_number = 1 , last_review_date = ? WHERE id = ?",
-            (self._get_today_date() , self.current_id))
+            (self._get_today_date() , self.current_flashcard_id))
         self.conn.commit()
 
     def save_edited_flashcard(self, new_en, new_it, new_example):
@@ -137,7 +140,7 @@ class FlashcardModel:
         self.cursor.execute(
             '''UPDATE flashcards SET question = ?, answer = ?, example = ?
             WHERE id = ?''',
-            (new_en, new_it, new_example, self.current_id))
+            (new_en, new_it, new_example, self.current_flashcard_id))
         self.conn.commit()
     
     def get_count_cards_per_box(self):
@@ -164,13 +167,12 @@ class FlashcardModel:
         return len(self.today_flashcards_ids)
     
     def move_to_next_flashcard(self):
-        # Query to get the total number of flashcards
-        self.cursor.execute('SELECT COUNT(*) FROM flashcards')
-        total_cards = self.cursor.fetchone()[0]
-        self.current_id += 1
-        if self.current_id >= total_cards:
-            return False
-        return True
+        self.current_flashcard_id = next(self.flashcard_iterator, None)
+        return self.current_flashcard_id
+
+    def set_flashcards_to_review(self,number):
+        self.flashcard_iterator = iter(self.today_flashcards_ids[:number])  # Create an iterator
+        self.move_to_next_flashcard()
 
     def load_excel_to_db(self, excel_path, source):
         # Load the Excel file into a pandas DataFrame
