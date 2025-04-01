@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import date
 import sqlite3
+from datetime import date, timedelta
 
 class FlashcardModel:
     def __init__(self): 
@@ -8,6 +9,7 @@ class FlashcardModel:
         self.cursor = self.conn.cursor() 
         self.current_id = 0
         self._create_table_flashcards()
+        self.today_flashcards_ids = self.find_todays_cards()
 
     def _create_table_flashcards(self):
         self.cursor.execute(
@@ -21,6 +23,42 @@ class FlashcardModel:
                 source Text
                 )''')
         self.conn.commit()  # Save the changes
+
+    def find_todays_cards(self):
+        # Get today's date
+        today = date.today()
+
+        # SQL query with conditions for 'Box' and 'LRD'
+        query = """
+        SELECT id
+        FROM flashcards
+        WHERE
+            box_number = 1 OR
+            (box_number = 2 AND DATE(last_review_date) <= ?) OR
+            (box_number = 3 AND DATE(last_review_date) <= ?) OR
+            (box_number = 4 AND DATE(last_review_date) <= ?) OR
+            (box_number = 5 AND DATE(last_review_date) <= ?)
+        """
+
+        # Calculate LRD threshold dates for each box condition
+        days_thresholds = {
+        2: today - timedelta(days=2),
+        3: today - timedelta(days=5),
+        4: today - timedelta(days=10),
+        5: today - timedelta(days=30)}
+
+        # Execute the query with the appropriate LRD thresholds
+        self.cursor.execute(query, (
+            days_thresholds[2].isoformat(),
+            days_thresholds[3].isoformat(),
+            days_thresholds[4].isoformat(),
+            days_thresholds[5].isoformat()
+        ))
+        # Fetch all matching flashcard IDs
+        flashcard_ids = self.cursor.fetchall()
+
+        # Return the list of IDs
+        return [row[0] for row in flashcard_ids]
 
     def insert_flashcard(self, question, answer, example, box_number=1, last_reviewed_date=None,source=None):
         if not last_reviewed_date: last_reviewed_date=self._get_today_date()
@@ -109,6 +147,7 @@ class FlashcardModel:
             FROM flashcards 
             GROUP BY box_number
         ''')
+
         box_counts = self.cursor.fetchall()
 
         result = {}
@@ -119,6 +158,10 @@ class FlashcardModel:
             if box_number not in result.keys():
                 result[box_number]=0
         return result
+    
+    def get_no_cards_for_today(self):
+        self.today_flashcards_ids = self.find_todays_cards()
+        return len(self.today_flashcards_ids)
     
     def move_to_next_flashcard(self):
         # Query to get the total number of flashcards

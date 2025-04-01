@@ -48,11 +48,12 @@ class FlashcardUI:
             self.first_frame.grid_columnconfigure(0, weight=1)
             self.first_frame.grid_columnconfigure(1, weight=1)
 
+            self.cards_for_today_label = tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize))
             self.no_cards_label = tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize))
             self.box_labels = [tk.Label(self.first_frame, font=(self.fontfamily, self.fontsize)) for _ in range(5)]
             
-            self.start_button = tk.Button(self.first_frame, text="Start", font=("Arial", self.fontsize))
-            
+            self.start_button = tk.Button(self.first_frame, text="Start", font=("Arial", self.fontsize)) 
+            self.cards_for_today_label.grid(row=0, column=0, columnspan=2, pady=10, sticky="nsew")
             for i in range(5):
                 self.box_labels[i].grid(row=i+1, column=0, columnspan=2, pady=10, sticky="nsew")
             
@@ -165,6 +166,7 @@ class FlashcardUI:
         self.it_label.config(text=it)  # Show Italian text
         self.eg_label.config(text=example)  # Show Italian example
         self.your_answer_label.config(text=self.get_answer(), fg=your_answer_color)
+
         self._current_frame = self.back_frame
 
     def show_edit_flashcard(self, en, it, example):
@@ -177,7 +179,10 @@ class FlashcardUI:
         self.eg_entry.insert(0, example)
         self._current_frame = self.edit_frame
     
-    def show_first_page(self, boxes):
+    def show_first_page(self, boxes,no_cards_for_today):
+         self.first_frame.tkraise()
+         print("here we are")
+         self.cards_for_today_label.config(text=f"Cards For Today:{no_cards_for_today}")
          for i in range(5):
              self.box_labels[i].config(text=f"box {i+1}: {boxes[i]}")
          self._current_frame = self.first_frame
@@ -191,7 +196,6 @@ class FlashcardUI:
         return self.answer.get()
     
     def start_UI(self):
-        # Start the UI loop
         self.root.mainloop()
 
     def get_current_frame(self):

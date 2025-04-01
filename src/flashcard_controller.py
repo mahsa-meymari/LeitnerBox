@@ -96,7 +96,8 @@ class FlashcardController:
 
     def show_first_page(self):
         count_per_boxs = self.fc_model.get_count_cards_per_box()
-        self.fc_ui.show_first_page(list(count_per_boxs.values()))
+        no_cards_for_today = self.fc_model.get_no_cards_for_today()
+        self.fc_ui.show_first_page(list(count_per_boxs.values()),no_cards_for_today)
         
 
     def start(self):
